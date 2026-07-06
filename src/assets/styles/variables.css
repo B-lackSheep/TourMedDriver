@@ -1,0 +1,28 @@
+:root {
+  --color-navy: #08366a;
+  --color-accent: #51d3b7;
+
+  --color-accent-hover: #3fb897;
+
+  --color-text-primary: #08366a;
+  --color-text-secondary: #7a7c809c;
+  --color-text-on-dark: #ffffff;
+
+  --color-bg: #ffffff;
+  --color-border: #e2e5ea;
+
+  --font-family-base: 'Roboto', sans-serif, system-ui;
+  --font-size-nav: 15px;
+  --font-size-base: 14px;
+  --font-size-heading: 22px;
+
+  --header-height: 60px;
+  --container-max-width: 1200px;
+  --container-padding: 24px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-full: 9999px;
+
+  --nav-gap: 24px;
+}
