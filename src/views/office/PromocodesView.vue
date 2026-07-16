@@ -1,7 +1,13 @@
 <script setup>
 import { usePromocodesStore } from '@/stores/promocodes'
+import { CART_CATEGORY_LABELS } from '@/stores/cart'
+import { onMounted } from 'vue'
 
 const promocodesStore = usePromocodesStore()
+
+onMounted(() => {
+  promocodesStore.fetchPromocodes()
+})
 
 function groupByCategory(order) {
   return order.items.reduce((categories, item) => {
@@ -38,7 +44,7 @@ function isOrderFullyRedeemed(order) {
         :key="category"
         class="promo-category"
       >
-        <h2 class="promo-category__title">{{ category }}</h2>
+        <h2 class="promo-category__title">{{ CART_CATEGORY_LABELS[category] ?? category }}</h2>
 
         <div v-for="(items, orgName) in orgGroups" :key="orgName" class="promo-org">
           <div class="promo-org__name">{{ orgName }}</div>

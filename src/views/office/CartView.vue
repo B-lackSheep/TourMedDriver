@@ -1,7 +1,12 @@
 <script setup>
 import { useCartStore, CART_CATEGORY_LABELS } from '@/stores/cart'
+import { onMounted } from 'vue'
 
 const cartStore = useCartStore()
+
+onMounted(() => {
+  cartStore.fetchCart()
+})
 </script>
 
 <template>
@@ -24,9 +29,9 @@ const cartStore = useCartStore()
             <div class="cart-item__detail">{{ item.detail }}</div>
           </div>
 
-          <div class="cart-item__date">{{ item.date }}</div>
+          <div class="cart-item__qty">× {{ item.qty }}</div>
 
-          <div class="cart-item__price">{{ item.price }}р</div>
+          <div class="cart-item__price">{{ item.price * item.qty }}р</div>
 
           <button
             type="button"
@@ -101,7 +106,7 @@ const cartStore = useCartStore()
 
 .cart-item {
   display: grid;
-  grid-template-columns: 96px 1fr 130px 90px 24px;
+  grid-template-columns: 96px 1fr 60px 90px 24px;
   align-items: center;
   gap: 20px;
   padding: 14px 0;
@@ -138,7 +143,7 @@ const cartStore = useCartStore()
   margin-top: 2px;
 }
 
-.cart-item__date {
+.cart-item__qty {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
 }
@@ -229,7 +234,7 @@ const cartStore = useCartStore()
     grid-template-columns: 72px 1fr auto;
     grid-template-areas:
       'thumb info remove'
-      'thumb date price';
+      'thumb qty price';
     row-gap: 6px;
   }
 
@@ -245,8 +250,8 @@ const cartStore = useCartStore()
     grid-area: remove;
   }
 
-  .cart-item__date {
-    grid-area: date;
+  .cart-item__qty {
+    grid-area: qty;
   }
 
   .cart-item__price {

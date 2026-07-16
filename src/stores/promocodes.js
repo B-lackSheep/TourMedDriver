@@ -1,85 +1,17 @@
+import { api } from '@/api/client'
 import { defineStore } from 'pinia'
+import { getOrganizationsByIds } from '@/api/orgCache'
+import { formatDate, formatTime } from '@/utils/date'
 
 export const usePromocodesStore = defineStore('promocodes', {
   state: () => ({
-    orders: [
-      {
-        id: 30556,
-        date: '21.06.2023',
-        time: '18:34',
-        items: [
-          {
-            category: 'Туроператоры',
-            orgName: 'Туроператор Дагестан (1 чел.)',
-            serviceName: 'Отель 3 звезды',
-            qty: 1,
-            price: 200000,
-            date: '24.06.2023',
-            promocode: '565-0000-12',
-            isRedeemed: false,
-          },
-          {
-            category: 'Медицинские центры',
-            orgName: 'Клиника "Здоровье" (1 чел.)',
-            serviceName: 'Трихоскопия',
-            qty: 1,
-            price: 5000,
-            date: null,
-            promocode: null,
-            isRedeemed: false,
-          },
-          {
-            category: 'Медицинские центры',
-            orgName: 'Клиника "Здоровье" (1 чел.)',
-            serviceName: 'Цифровая диагностика',
-            qty: 1,
-            price: 4000,
-            date: '26.06.2023',
-            promocode: '565-0000-12',
-            isRedeemed: false,
-          },
-          {
-            category: 'Кафе',
-            orgName: 'Ресторан "Рестик" (2 чел.)',
-            serviceName: 'Пюре с котлеткой',
-            qty: 1,
-            price: 14000,
-            date: '30.06.2023',
-            promocode: '565-0000-12',
-            isRedeemed: false,
-          },
-        ],
-      },
-
-      {
-        id: 63453,
-        date: '03.01.2022',
-        time: null,
-        items: [
-          {
-            category: 'Медицинские центры',
-            orgName: 'Клиника "Здоровье" (1 человек)',
-            serviceName: 'ЭКГ',
-            qty: 1,
-            price: null,
-            date: '02.03.2022',
-            promocode: '757-0043-37',
-            isRedeemed: true,
-          },
-        ],
-      },
-    ],
-
+    orders: [],
     isLoading: false,
   }),
 
   getters: {
     sortedOrders(state) {
-      const toDate = (order) => {
-        const [day, month, year] = order.date.split('.').map(Number)
-        return new Date(year, month - 1, day)
-      }
-      return [...state.orders].sort((a, b) => toDate(b) - toDate(a))
+      return [...state.orders].sort((a, b) => new Date(b.rawDate) - new Date(a.rawDate))
     },
 
     allPromocodes(state) {
@@ -91,7 +23,34 @@ export const usePromocodesStore = defineStore('promocodes', {
     async fetchPromocodes() {
       this.isLoading = true
       try {
-        //гет запрос с промокодами из бэка
+        const rawOrders = await api.get('/purchased/')
+
+        const orgIds = rawOrders.flatMap((order) =>
+          order.items.map((i) => i.service_details.organization),
+        )
+        const orgsMap = await getOrganizationsByIds(orgIds)
+
+        this.orders = rawOrders.map((order) => ({
+          id: order.id,
+          rawDate: order.created_at,
+          date: formatDate(order.created_at),
+          time: formatTime(order.created_at),
+          items: order.items.map((item) => {
+            const org = item.service_details.organization_details
+            const service = item.service_details
+            return {
+              category: org?.org_type ?? 'hotel',
+              orgName: org?.name ?? 'Организация',
+              serviceName: service.name,
+              qty: item.qty,
+              price: Number(service.price),
+              image: service.image || service.gallery[0]?.image || null,
+              date: formatDate(order.created_at),
+              promocode: order.promo_code,
+              isRedeemed: item.is_redeemed,
+            }
+          }),
+        }))
       } finally {
         this.isLoading = false
       }

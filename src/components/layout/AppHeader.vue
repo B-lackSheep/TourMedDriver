@@ -2,9 +2,25 @@
 import { computed } from 'vue'
 import AppLogo from './AppLogo.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile.js'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
-const profileLink = computed(() => (authStore.isAuthenticated ? '/office' : '/login'))
+const profileStore = useProfileStore()
+const router = useRouter()
+
+const profileLink = computed(() => {
+  if (!authStore.isAuthenticated) return '/login'
+  if (profileStore.isAdmin) return '/admin'
+  if (profileStore.role === 'org') return '/org-office'
+  return '/office'
+})
+
+function handleLogout() {
+  authStore.logout()
+  profileStore.$reset()
+  router.push({ name: 'login' })
+}
 </script>
 
 <template>
@@ -31,6 +47,16 @@ const profileLink = computed(() => (authStore.isAuthenticated ? '/office' : '/lo
             />
           </svg>
         </router-link>
+
+        <button
+          v-if="authStore.isAuthenticated"
+          type="button"
+          class="app-header__logout"
+          aria-label="Выйти"
+          @click="handleLogout"
+        >
+          Выйти
+        </button>
       </nav>
     </div>
   </header>
@@ -83,6 +109,25 @@ const profileLink = computed(() => (authStore.isAuthenticated ? '/office' : '/lo
 .app-header__profile:hover,
 .app-header__profile.router-link-active {
   opacity: 1;
+}
+
+.app-header__logout {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 6px 14px;
+  color: var(--color-text-on-dark);
+  font-size: var(--font-size-nav);
+  cursor: pointer;
+  opacity: 0.9;
+  transition:
+    opacity 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.app-header__logout:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 @media (max-width: 640px) {

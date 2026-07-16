@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, ref } from 'vue'
+import { computed, reactive, ref, onMounted } from 'vue'
 import { useProfileStore } from '@/stores/profile'
 
 const profileStore = useProfileStore()
@@ -8,6 +8,13 @@ const isEditing = ref(false)
 const draft = reactive({}) //черновик
 
 const genderLabel = computed(() => (profileStore.gender === 'male' ? 'Мужской' : 'Женский'))
+
+onMounted(() => {
+  //оказались тут без loginview
+  if (!profileStore.lastName) {
+    profileStore.fetchProfile()
+  }
+})
 
 function toggleEdit() {
   if (!isEditing.value) {

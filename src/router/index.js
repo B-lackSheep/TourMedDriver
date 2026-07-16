@@ -1,11 +1,17 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
 
 const routes = [
   {
     path: '/',
     name: 'catalog',
     component: () => import('@/views/CatalogView.vue'),
+  },
+  {
+    path: '/organizations/:id',
+    name: 'organization-detail',
+    component: () => import('@/views/OrganizationDetailView.vue'),
   },
   {
     path: '/about',
@@ -21,6 +27,11 @@ const routes = [
     path: '/login',
     name: 'login',
     component: () => import('@/views/LoginView.vue'),
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/RegisterView.vue'),
   },
 
   {
@@ -50,15 +61,27 @@ const routes = [
   {
     path: '/admin',
     component: () => import('@/views/admin/AdminOfficeView.vue'),
-    meta: { requiresAuth: true },
-    redirect: { requiresAuth: true, role: 'admin' },
+    meta: { requiresAuth: true, role: 'admin' },
+    redirect: { name: 'admin-moderation' },
     children: [
       {
-        path: '',
-        name: 'admin-organizations',
-        component: () => import('@/views/admin/AdminOrganizationsView.vue'),
+        path: 'moderation',
+        name: 'admin-moderation',
+        component: () => import('@/views/admin/AdminModerationView.vue'),
+      },
+      {
+        path: 'stats',
+        name: 'admin-stats',
+        component: () => import('@/views/admin/AdminStatsView.vue'),
       },
     ],
+  },
+
+  {
+    path: '/org-office',
+    name: 'org-office',
+    component: () => import('@/views/org/OrgOfficeView.vue'),
+    meta: { requiresAuth: true, role: 'org' },
   },
 
   {
@@ -73,15 +96,21 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const authStore = useAuthStore()
+  const profileStore = useProfileStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
 
-  if (to.meta.role && to.meta.role !== authStore.user?.role) {
-    return { name: 'catalog' }
+  if (to.meta.role && authStore.isAuthenticated) {
+    if (profileStore.role === null && !profileStore.isLoading) {
+      await profileStore.fetchProfile()
+    }
+    if (to.meta.role !== profileStore.role) {
+      return { name: 'catalog' }
+    }
   }
 
   return true
