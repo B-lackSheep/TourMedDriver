@@ -29,7 +29,9 @@ async function request(path, options = {}, allowRetry = true) {
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => null)
-    throw new Error(`API ${options.method ?? 'GET'} ${path} failed: ${response.status} ${errorBody ?? ''}`)
+    throw new Error(
+      `API ${options.method ?? 'GET'} ${path} failed: ${response.status} ${errorBody ?? ''}`,
+    )
   }
 
   const text = await response.text()
@@ -42,5 +44,6 @@ export const api = {
   postForm: (path, formData) => request(path, { method: 'POST', body: formData }),
   put: (path, body) => request(path, { method: 'PUT', body: JSON.stringify(body) }),
   patch: (path, body) => request(path, { method: 'PATCH', body: JSON.stringify(body) }),
+  patchForm: (path, formData) => request(path, { method: 'PATCH', body: formData }),
   delete: (path) => request(path, { method: 'DELETE' }),
 }

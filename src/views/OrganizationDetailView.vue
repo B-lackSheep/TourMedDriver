@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
@@ -10,12 +10,18 @@ import {
   TOUR_ORG_TYPES,
   CTA_LABELS,
 } from '@/constants/orgTypes'
+import { useReviewsStore } from '@/stores/reviews'
 import { formatDateRange } from '@/utils/date'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const cartStore = useCartStore()
+const reviewsStore = useReviewsStore()
+
+const reviewDraft = reactive({ rating: 5, text: '' })
+const reviewPage = ref(1)
+const REVIEWS_PER_PAGE = 3
 
 const org = ref(null)
 const isLoading = ref(false)
@@ -24,12 +30,39 @@ const selectedImage = ref(null)
 const expandedTourId = ref(null)
 const roomImageIndex = ref({})
 
+const mapEmbedUrl = computed(() => {
+  if (!org.value?.latitude || !org.value?.longitude) return ''
+  const lat = Number(org.value.latitude)
+  const lon = Number(org.value.longitude)
+  const d = 0.005
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - d}%2C${lat - d}%2C${lon + d}%2C${lat + d}&marker=${lat}%2C${lon}`
+})
+
+const totalReviewPages = computed(() =>
+  Math.max(1, Math.ceil(reviewsStore.items.length / REVIEWS_PER_PAGE)),
+)
+
+const pagedReviews = computed(() => {
+  const start = (reviewPage.value - 1) * REVIEWS_PER_PAGE
+  return reviewsStore.items.slice(start, start + REVIEWS_PER_PAGE)
+})
+
+async function submitReview() {
+  await reviewsStore.submit(org.value.id, reviewDraft.rating, reviewDraft.text)
+  reviewDraft.text = ''
+  reviewPage.value = 1
+}
+
 async function loadOrganization() {
   isLoading.value = true
   errorMessage.value = ''
   try {
     org.value = await api.get(`/organizations/${route.params.id}/`)
     selectedImage.value = org.value.image || org.value.gallery[0]?.image || null
+    await Promise.all([
+      reviewsStore.fetchByOrg(org.value.id),
+      authStore.isAuthenticated ? reviewsStore.fetchMyReview(org.value.id) : Promise.resolve(),
+    ])
   } catch (err) {
     errorMessage.value = 'Организация не найдена'
     console.error(err)
@@ -360,14 +393,90 @@ function shiftRoomImage(service, delta) {
             <p v-if="!org.services.length" class="org-detail__empty">Услуги пока не добавлены</p>
           </section>
 
-          <section class="org-detail__map-block">
-            <h2 class="org-detail__section-title">Карта</h2>
-            <div class="org-detail__placeholder">Карта появится здесь позже</div>
-          </section>
+          <section class="org-detail__map-reviews">
+            <div class="reviews-col">
+              <h2 class="org-detail__section-title">Отзывы</h2>
 
-          <section class="org-detail__reviews">
-            <h2 class="org-detail__section-title">Отзывы</h2>
-            <div class="org-detail__placeholder">Отзывы появятся здесь позже</div>
+              <div v-if="pagedReviews.length" class="reviews-col__list">
+                <div v-for="r in pagedReviews" :key="r.id" class="review-item">
+                  <div class="review-item__head">
+                    <strong class="review-item__name">{{ r.user_name }}</strong>
+                    <span class="review-item__rating">★ {{ r.rating }}</span>
+                  </div>
+                  <p class="review-item__text">{{ r.text }}</p>
+                </div>
+              </div>
+              <p v-else class="org-detail__empty">Отзывов пока нет</p>
+
+              <div v-if="totalReviewPages > 1" class="reviews-col__pagination">
+                <button
+                  v-for="p in totalReviewPages"
+                  :key="p"
+                  type="button"
+                  class="reviews-col__page-btn"
+                  :class="{ 'reviews-col__page-btn--active': p === reviewPage }"
+                  @click="reviewPage = p"
+                >
+                  {{ p }}
+                </button>
+              </div>
+
+              <div v-if="authStore.isAuthenticated" class="review-form">
+                <p v-if="reviewsStore.myReview?.status === 'pending'" class="review-form__notice">
+                  Ваш отзыв на рассмотрении администратора
+                </p>
+                <p
+                  v-else-if="reviewsStore.myReview?.status === 'rejected'"
+                  class="review-form__notice review-form__notice--rejected"
+                >
+                  Предыдущий отзыв был отклонён
+                </p>
+
+                <div class="review-form__rating">
+                  <span>Оценка:</span>
+                  <button
+                    v-for="n in 5"
+                    :key="n"
+                    type="button"
+                    class="review-form__star"
+                    :class="{ 'review-form__star--active': n <= reviewDraft.rating }"
+                    @click="reviewDraft.rating = n"
+                  >
+                    ★
+                  </button>
+                </div>
+
+                <label class="review-form__field">
+                  <span>Мой отзыв:</span>
+                  <textarea
+                    v-model="reviewDraft.text"
+                    rows="4"
+                    placeholder="Ваш отзыв..."
+                  ></textarea>
+                </label>
+
+                <button
+                  type="button"
+                  class="review-form__submit-btn"
+                  :disabled="reviewsStore.isSubmitting"
+                  @click="submitReview"
+                >
+                  {{ reviewsStore.isSubmitting ? 'Отправляем...' : 'Отправить' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="map-col">
+              <iframe
+                v-if="org.latitude && org.longitude"
+                class="map-col__frame"
+                :src="mapEmbedUrl"
+                loading="lazy"
+              ></iframe>
+              <div v-else class="org-detail__placeholder">
+                Организация пока не указала координаты
+              </div>
+            </div>
           </section>
         </div>
       </div>
@@ -863,9 +972,161 @@ function shiftRoomImage(service, delta) {
   background-color: var(--color-accent-hover);
 }
 
-.org-detail__map-block,
-.org-detail__reviews {
+.org-detail__map-reviews {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
   margin-bottom: 40px;
+}
+
+.reviews-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.reviews-col__list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.review-item__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.review-item__name {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+}
+
+.review-item__rating {
+  color: var(--color-accent-hover);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.review-item__text {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+}
+
+.reviews-col__pagination {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.reviews-col__page-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.reviews-col__page-btn--active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover);
+  font-weight: 700;
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.review-form__notice {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.review-form__notice--rejected {
+  color: #e5484d;
+}
+
+.review-form__rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.review-form__star {
+  background: none;
+  border: none;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-border);
+  padding: 0;
+}
+
+.review-form__star--active {
+  color: var(--color-accent);
+}
+
+.review-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+}
+
+.review-form__field textarea {
+  font-family: var(--font-family-base);
+  font-weight: 400;
+  font-size: var(--font-size-base);
+  padding: 10px 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  resize: vertical;
+}
+
+.review-form__submit-btn {
+  align-self: flex-start;
+  padding: 10px 28px;
+  border: none;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent);
+  color: var(--color-text-on-dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.review-form__submit-btn:hover {
+  background-color: var(--color-accent-hover);
+}
+
+.review-form__submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.map-col {
+  flex: 1.1;
+  min-width: 0;
+}
+
+.map-col__frame {
+  width: 100%;
+  height: 360px;
+  border: none;
+  border-radius: var(--radius-md);
 }
 
 .org-detail__placeholder {
@@ -991,6 +1252,11 @@ function shiftRoomImage(service, delta) {
     width: 100%;
     position: static;
   }
+
+  .org-detail__map-reviews {
+    flex-direction: column;
+  }
+
   .service-row,
   .room-row,
   .tour-card__main {

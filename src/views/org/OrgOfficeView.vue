@@ -17,6 +17,8 @@ const form = reactive({
   region: '',
   city: '',
   address: '',
+  latitude: '',
+  longitude: '',
   phone: '',
   working_hours: '',
   perksText: '',
@@ -59,6 +61,8 @@ function fillFormFrom(org) {
   form.region = org.region
   form.city = org.city
   form.address = org.address
+  form.latitude = org.latitude ?? ''
+  form.longitude = org.longitude ?? ''
   form.phone = org.phone
   form.working_hours = org.working_hours
   form.perksText = (org.perks || []).join(', ')
@@ -75,10 +79,6 @@ function fillFormFrom(org) {
     includedText: (s.included || []).join(', '),
     itineraryText: (s.itinerary || []).join('\n'),
   }))
-}
-
-function startCreate() {
-  mode.value = 'pick-type'
 }
 
 function pickType(type) {
@@ -111,6 +111,8 @@ async function submitForm() {
     fd.append('phone', form.phone)
     fd.append('working_hours', form.working_hours)
     if (imageFile.value) fd.append('image', imageFile.value)
+    if (form.latitude) fd.append('latitude', form.latitude)
+    if (form.longitude) fd.append('longitude', form.longitude)
 
     const perks = form.perksText
       .split(',')
@@ -285,6 +287,16 @@ onMounted(async () => {
             type="text"
             placeholder="Телевизор, Кухня, Мини-бар"
           />
+        </label>
+
+        <label class="org-form__field">
+          <span>Широта</span>
+          <input v-model="form.latitude" type="number" step="0.000001" placeholder="55.751244" />
+        </label>
+
+        <label class="org-form__field">
+          <span>Долгота</span>
+          <input v-model="form.longitude" type="number" step="0.000001" placeholder="37.618423" />
         </label>
       </div>
 

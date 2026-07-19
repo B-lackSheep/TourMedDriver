@@ -31,6 +31,10 @@ onMounted(loadStats)
       <div v-for="row in stats" :key="row.org_name" class="stats-row">
         <div class="stats-row__name">{{ row.org_name }}</div>
         <div class="stats-row__count">{{ row.orders_count }} заказ(ов)</div>
+        <div class="stats-row__rating">
+          <template v-if="row.avg_rating">★ {{ row.avg_rating }}</template>
+          <template v-else>—</template>
+        </div>
         <div class="stats-row__sum">{{ row.total_sum }}р</div>
       </div>
 
@@ -42,7 +46,7 @@ onMounted(loadStats)
 <style scoped>
 .stats-row {
   display: grid;
-  grid-template-columns: 1fr 140px 120px;
+  grid-template-columns: 1fr 140px 100px 120px;
   align-items: center;
   gap: 20px;
   padding: 12px 0;
@@ -62,6 +66,13 @@ onMounted(loadStats)
 .stats-row__count {
   font-size: var(--font-size-base);
   color: var(--color-text-secondary);
+}
+
+.stats-row__rating {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-accent-hover);
+  text-align: center;
 }
 
 .stats-row__sum {

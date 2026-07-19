@@ -44,11 +44,5 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('access_token')
       localStorage.removeItem('refresh_token')
     },
-
-    //временено
-    _devLogin() {
-      this.accessToken = 'dev-token'
-      this.refreshToken = null
-    },
   },
 })

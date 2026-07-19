@@ -68,9 +68,5 @@ export const useProfileStore = defineStore('profile', {
         this.isSaving = false
       }
     },
-
-    _devSetRole(role) {
-      this.role = role
-    },
   },
 })

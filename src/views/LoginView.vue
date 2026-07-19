@@ -44,13 +44,6 @@ function redirectAfterLogin() {
 
   router.push(redirectByRole())
 }
-
-// локальный обход для проверки вёрстки кабинетов без реального бэка
-function devLoginAs(role) {
-  authStore._devLogin()
-  profileStore._devSetRole(role)
-  redirectAfterLogin()
-}
 </script>
 
 <template>
@@ -80,22 +73,6 @@ function devLoginAs(role) {
         Нет аккаунта?
         <router-link :to="{ name: 'register' }">Зарегистрироваться</router-link>
       </p>
-
-      <div class="login__dev">
-        <p class="login__dev-label">локальный выбор роли (без реального бэка)</p>
-        <div class="login__dev-buttons">
-          <button type="button" class="login__dev-btn" @click="devLoginAs('buyer')">
-            Прикинуться пользователем
-          </button>
-          <button
-            type="button"
-            class="login__dev-btn login__dev-btn--admin"
-            @click="devLoginAs('admin')"
-          >
-            Прикинуться администратором
-          </button>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -192,51 +169,5 @@ function devLoginAs(role) {
 .login__register-link a {
   color: var(--color-accent-hover);
   font-weight: 600;
-}
-
-.login__dev {
-  margin-top: 28px;
-  padding-top: 20px;
-  border-top: 1px dashed var(--color-border);
-}
-
-.login__dev-label {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-  margin: 0 0 10px;
-}
-
-.login__dev-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.login__dev-btn {
-  padding: 9px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-navy);
-  background-color: var(--color-bg);
-  color: var(--color-navy);
-  font-size: var(--font-size-base);
-  cursor: pointer;
-  transition:
-    background-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.login__dev-btn:hover {
-  background-color: var(--color-navy);
-  color: var(--color-text-on-dark);
-}
-
-.login__dev-btn--admin {
-  border-color: var(--color-accent-hover);
-  color: var(--color-accent-hover);
-}
-
-.login__dev-btn--admin:hover {
-  background-color: var(--color-accent-hover);
-  color: var(--color-text-on-dark);
 }
 </style>
