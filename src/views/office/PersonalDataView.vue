@@ -4,6 +4,7 @@ import { useProfileStore } from '@/stores/profile'
 
 const profileStore = useProfileStore()
 const isEditing = ref(false)
+const errorMessage = ref('')
 
 const draft = reactive({}) //черновик
 
@@ -34,8 +35,14 @@ function toggleEdit() {
 }
 
 async function save() {
-  await profileStore.updateProfile({ ...draft })
-  isEditing.value = false
+  errorMessage.value = ''
+  try {
+    await profileStore.updateProfile({ ...draft })
+    isEditing.value = false
+  } catch (err) {
+    errorMessage.value = 'Не удалось сохранить. Проверьте правильность email и телефона.'
+    console.error(err)
+  }
 }
 </script>
 
@@ -139,6 +146,8 @@ async function save() {
         <span>Телефон</span>
         <input v-model="draft.phone" type="tel" />
       </label>
+
+      <p v-if="errorMessage" class="personal-data__error">{{ errorMessage }}</p>
 
       <button type="submit" class="personal-data__save-btn" :disabled="profileStore.isSaving">
         Сохранить
@@ -266,5 +275,11 @@ async function save() {
 
 .personal-data__edit-btn:hover {
   opacity: 0.7;
+}
+
+.personal-data__error {
+  color: #e5484d;
+  font-size: 13px;
+  margin: 0 0 12px;
 }
 </style>

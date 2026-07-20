@@ -167,7 +167,25 @@ function shiftRoomImage(service, delta) {
     <p v-else-if="errorMessage" class="org-detail__error">{{ errorMessage }}</p>
 
     <template v-else-if="org">
-      <router-link :to="{ name: 'catalog' }" class="org-detail__back">←</router-link>
+      <router-link :to="{ name: 'catalog' }" class="org-detail__back">
+        <span class="org-detail__back-icon">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M15 9H3M3 9L8 4M3 9L8 14"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </span>
+      </router-link>
 
       <div class="org-detail__header">
         <div class="org-detail__gallery">
@@ -1115,6 +1133,45 @@ function shiftRoomImage(service, delta) {
 .review-form__submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.org-detail__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  transition: color 0.15s ease;
+}
+
+.org-detail__back-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    color 0.15s ease;
+}
+
+.org-detail__back:hover .org-detail__back-icon {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text-on-dark);
+  transform: translateX(-3px);
+}
+
+.org-detail__back:hover .org-detail__back-label {
+  color: var(--color-accent-hover);
 }
 
 .map-col {
